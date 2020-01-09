@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"github.com/gorilla/mux"
 	"log"
@@ -24,6 +25,7 @@ func main() {
 	r := mux.NewRouter()
 	r.HandleFunc("/", Index)
 	r.HandleFunc("/v1/long", Long)
+	r.HandleFunc("/v1/items", ListItems)
 	api := http.Server{
 		Addr:         "localhost:8001",
 		Handler:      r,
@@ -89,4 +91,38 @@ func Long(w http.ResponseWriter, r *http.Request)  {
 		fmt.Printf("%d sec", i)
 	}
 	fmt.Fprintf(w, "Request: %s %s", r.Method, r.URL.Path)
+}
+
+type Item struct {
+	Name string `json:"name"`
+	Cost string `json:"cost"`
+	Description string `json:"description"`
+}
+
+func ListItems(w http.ResponseWriter, r *http.Request)  {
+	list := []Item{
+		{Name: "backpack", Cost: "50ss", Description: "Carries 5 bulk"},
+		{Name: "sack", Cost: "80bp", Description: "Carries 5 bulk, requires at least one hand"},
+		{Name: "satchel", Cost: "30ss", Description: "Carries 2 bulk"},
+		{Name: "compass", Cost: "2gc", Description: "shows north"},
+		{Name: "50ft of rope", Cost: "20ss", Description: "hemp rope"},
+		{Name: "spyglass", Cost: "5gc", Description: "4x magnification"},
+		{Name: "crowbar", Cost: "18ss", Description: "tool to pry open"},
+		{Name: "hammer", Cost: "15ss", Description: "tool to hammer"},
+		{Name: "hourglass", Cost: "1gc", Description: "takes 1 hour for sand"},
+		{Name: "fishing rod", Cost: "10ss", Description: "tool for fishing"},
+		{Name: "1lb fish bait", Cost: "5bp", Description: "bugs to help catch fish"},
+	}
+	data, err := json.Marshal(list)
+	if err != nil {
+		log.Println("error: marshalling result", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	if _, err := w.Write(data); err != nil {
+		log.Println("error: writing result", err)
+	}
 }
