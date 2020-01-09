@@ -23,6 +23,7 @@ func main() {
 	// Start API Service
 	r := mux.NewRouter()
 	r.HandleFunc("/", Index)
+	r.HandleFunc("/v1/long", Long)
 	api := http.Server{
 		Addr:         "localhost:8001",
 		Handler:      r,
@@ -38,10 +39,6 @@ func main() {
 		log.Printf("main: listener goroutine: API listening on %s", api.Addr)
 		serverErrors <- api.ListenAndServe()
 	}()
-
-	//if err := http.ListenAndServe("localhost:8001", r); err != nil {
-	//	log.Fatalf("error: listening and serving: %s", err)
-	//}
 
 	// Make a channel to listen for an interrupt or terminate signal from the OS.
 	// Use a buffered channel because the signal package requires it.
@@ -79,4 +76,17 @@ func main() {
 
 func Index(w http.ResponseWriter, r *http.Request)  {
 	fmt.Fprintf(w, "Site it up")
+}
+
+func Long(w http.ResponseWriter, r *http.Request)  {
+	log.Println("start long request")
+	defer log.Println("end long request")
+
+	// testing for past 5sec timeout
+	// after 5sec, the func would repeat.. not good
+	for i := 0; i < 3; i++ {
+		time.Sleep(time.Second)
+		fmt.Printf("%d sec", i)
+	}
+	fmt.Fprintf(w, "Request: %s %s", r.Method, r.URL.Path)
 }
