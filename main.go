@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"github.com/gorilla/mux"
@@ -99,21 +100,31 @@ type Item struct {
 	Description string `json:"description"`
 }
 
-func ListItems(w http.ResponseWriter, r *http.Request)  {
-	list := []Item{
-		{Name: "backpack", Cost: "50ss", Description: "Carries 5 bulk"},
-		{Name: "sack", Cost: "80bp", Description: "Carries 5 bulk, requires at least one hand"},
-		{Name: "satchel", Cost: "30ss", Description: "Carries 2 bulk"},
-		{Name: "compass", Cost: "2gc", Description: "shows north"},
-		{Name: "50ft of rope", Cost: "20ss", Description: "hemp rope"},
-		{Name: "spyglass", Cost: "5gc", Description: "4x magnification"},
-		{Name: "crowbar", Cost: "18ss", Description: "tool to pry open"},
-		{Name: "hammer", Cost: "15ss", Description: "tool to hammer"},
-		{Name: "hourglass", Cost: "1gc", Description: "takes 1 hour for sand"},
-		{Name: "fishing rod", Cost: "10ss", Description: "tool for fishing"},
-		{Name: "1lb fish bait", Cost: "5bp", Description: "bugs to help catch fish"},
+func ConnectDB() *sql.DB {
+	log.Println("Connecting to db")
+	defer log.Println("Connected to db")
+	host := "localhost:5432"
+	// TODO: remove hardcorded pwd
+	password := "password"
+	dbsource := fmt.Sprintf("postgres://postgres:%s@%s/postgres?sslmode=disable", password, host)
+	db, err := sql.Open("postgres", dbsource)
+	if err != nil {
+		log.Printf("error opening db: %v", err)
 	}
-	data, err := json.Marshal(list)
+	if err = db.Ping(); err != nil {
+		log.Printf("error contacting db %v", err)
+	}
+	return db
+}
+
+type Items []Item
+
+func (i *Items) List(w http.ResponseWriter, r *http.Request)  {
+	const query = `SELECT * FROM items`
+	db := ConnectDB()
+	defer db.Close()
+
+	data, err := json.Marshal(i)
 	if err != nil {
 		log.Println("error: marshalling result", err)
 		w.WriteHeader(http.StatusInternalServerError)

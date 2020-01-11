@@ -1,0 +1,23 @@
+# install: https://github.com/docker/compose/releases
+# alias dc='docker-compose'
+# dc up
+# dc stop
+# dc down
+# list containers: docker ps
+# cleanup: docker system prune
+
+version: '3'
+
+networks:
+  shared-network:
+    driver: bridge
+
+services:
+  # start postgres
+  db:
+    container_name: items_db
+    networks:
+      - shared-network
+    image: postgres:latest
+    ports:
+      - 5432:5432
