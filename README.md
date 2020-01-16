@@ -12,6 +12,12 @@ requires:
     go build
     ./serviceRestExample
     
+## Connect to database
+    
+    export PGPASSWORD='password'
+    psql -h localhost -p 5432 -U postgres -a -f ./schema/setup.sql
+    psql -h localhost -p 5432 -U postgres -a -f ./schema/seed.sql
+    
 ## Cleanup
     go clean
     
