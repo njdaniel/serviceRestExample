@@ -15,3 +15,4 @@ run:
 clean:
 	@echo "Cleaning serviceRestExample.."
 	go clean
+	docker system prune

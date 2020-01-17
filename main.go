@@ -94,17 +94,12 @@ func Long(w http.ResponseWriter, r *http.Request)  {
 	fmt.Fprintf(w, "Request: %s %s", r.Method, r.URL.Path)
 }
 
-type Item struct {
-	Name string `json:"name"`
-	Cost string `json:"cost"`
-	Description string `json:"description"`
-}
 
 func ConnectDB() *sql.DB {
 	log.Println("Connecting to db")
 	defer log.Println("Connected to db")
 	host := "localhost:5432"
-	// TODO: remove hardcorded pwd
+	// TODO: remove hardcoded pwd
 	password := "password"
 	dbsource := fmt.Sprintf("postgres://postgres:%s@%s/postgres?sslmode=disable", password, host)
 	db, err := sql.Open("postgres", dbsource)
@@ -117,14 +112,38 @@ func ConnectDB() *sql.DB {
 	return db
 }
 
+type Item struct {
+	Name string `json:"name"`
+	Cost string `json:"cost"`
+	Description string `json:"description"`
+}
 type Items []Item
 
-func (i *Items) List(w http.ResponseWriter, r *http.Request)  {
+func ListItems(w http.ResponseWriter, r *http.Request)  {
 	const query = `SELECT * FROM items`
 	db := ConnectDB()
 	defer db.Close()
 
-	data, err := json.Marshal(i)
+	rows, err := db.Query(query)
+	if err != nil {
+		log.Printf("error: could not query: %v \n", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
+	var items Items
+	for rows.Next() {
+		item := Item{}
+		err := rows.Scan(&item.Name, &item.Cost, &item.Description)
+		if err != nil {
+			log.Printf("error: could not scan row into item, %v \n", err)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		items = append(items, item)
+	}
+
+	data, err := json.Marshal(items)
 	if err != nil {
 		log.Println("error: marshalling result", err)
 		w.WriteHeader(http.StatusInternalServerError)
